@@ -1,0 +1,37 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "gh-cli",
+  "description": "GitHub CLI wrapper for PRs, issues, runs, and API queries",
+  "version": "1.0.0",
+  "category": "web",
+  "entry_point": "/data/data/com.termux/files/home/tools/web/gh-cli.sh",
+  "requires_root": false,
+  "parameters": {
+    "command": {
+      "type": "string",
+      "description": "gh subcommand (pr, issue, run, api, repo)",
+      "required": true,
+      "enum": ["pr", "issue", "run", "api", "repo", "status"]
+    },
+    "args": {
+      "type": "string",
+      "description": "Additional arguments for gh command",
+      "required": false
+    },
+    "repo": {
+      "type": "string",
+      "description": "Repository (owner/repo format)",
+      "required": false
+    },
+    "json": {
+      "type": "boolean",
+      "description": "Output as JSON",
+      "required": false,
+      "default": false
+    }
+  },
+  "returns": {
+    "type": "object",
+    "description": "Command output"
+  }
+}

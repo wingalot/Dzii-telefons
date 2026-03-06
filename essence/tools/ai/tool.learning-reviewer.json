@@ -1,0 +1,40 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "learning-reviewer",
+  "description": "Reviews pending learnings and suggests promotions to project memory",
+  "version": "1.0.0",
+  "category": "ai",
+  "entry_point": "/data/data/com.termux/files/home/.openclaw/skills/self-improving-agent/scripts/review-learnings.sh",
+  "requires_root": false,
+  "parameters": {
+    "filter": {
+      "type": "string",
+      "description": "Filter by status",
+      "required": false,
+      "default": "pending",
+      "enum": ["pending", "resolved", "promoted", "all"]
+    },
+    "priority": {
+      "type": "string",
+      "description": "Filter by priority",
+      "required": false,
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "area": {
+      "type": "string",
+      "description": "Filter by area",
+      "required": false,
+      "enum": ["frontend", "backend", "infra", "tests", "docs", "config"]
+    },
+    "count_only": {
+      "type": "boolean",
+      "description": "Only show count, not details",
+      "required": false,
+      "default": false
+    }
+  },
+  "returns": {
+    "type": "object",
+    "description": "List of matching learnings with promotion suggestions"
+  }
+}

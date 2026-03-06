@@ -1,0 +1,33 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "app-manager",
+  "description": "Manage Android apps - list, launch, force-stop",
+  "version": "1.0.0",
+  "category": "system",
+  "entry_point": "/data/data/com.termux/files/home/tools/system/app-manager.sh",
+  "requires_root": true,
+  "parameters": {
+    "action": {
+      "type": "string",
+      "description": "App management action",
+      "required": true,
+      "enum": ["list", "launch", "stop", "info", "clear-data"]
+    },
+    "package": {
+      "type": "string",
+      "description": "Package name (e.g., com.whatsapp)",
+      "required": false
+    },
+    "filter": {
+      "type": "string",
+      "description": "Filter for list action (system|third-party|all)",
+      "required": false,
+      "default": "third-party",
+      "enum": ["system", "third-party", "all"]
+    }
+  },
+  "returns": {
+    "type": "object",
+    "description": "App information or action result"
+  }
+}

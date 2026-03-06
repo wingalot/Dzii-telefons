@@ -1,0 +1,27 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "device-screenshot",
+  "description": "Captures device screenshot using screencap",
+  "version": "1.0.0",
+  "category": "media",
+  "entry_point": "/data/data/com.termux/files/home/tools/system/device-screenshot.sh",
+  "requires_root": true,
+  "parameters": {
+    "output_path": {
+      "type": "string",
+      "description": "Path to save screenshot",
+      "required": false,
+      "default": "/sdcard/screenshot_$(date +%s).png"
+    },
+    "pull": {
+      "type": "boolean",
+      "description": "Pull screenshot to local storage after capture",
+      "required": false,
+      "default": false
+    }
+  },
+  "returns": {
+    "type": "object",
+    "description": "Screenshot path and metadata"
+  }
+}

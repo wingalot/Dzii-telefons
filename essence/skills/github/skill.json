@@ -1,0 +1,18 @@
+{
+  "name": "github",
+  "description": "Interact with GitHub using the gh CLI - PRs, issues, CI runs, API queries",
+  "version": "1.0.0",
+  "author": "openclaw",
+  "category": "web",
+  "tools": [
+    "gh-pr",
+    "gh-issue",
+    "gh-run",
+    "gh-api"
+  ],
+  "config": {
+    "cli_command": "gh",
+    "requires_auth": true,
+    "default_repo_flag": "--repo"
+  }
+}

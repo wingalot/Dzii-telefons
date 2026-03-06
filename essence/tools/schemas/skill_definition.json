@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Skill Definition Schema",
+  "type": "object",
+  "required": ["name", "description", "version", "tools"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "author": { "type": "string" },
+    "tools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of tool names this skill provides"
+    },
+    "config": {
+      "type": "object",
+      "description": "Skill-specific configuration schema"
+    }
+  }
+}

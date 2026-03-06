@@ -1,0 +1,32 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "skill-install",
+  "description": "Install a skill from the agent skills ecosystem",
+  "version": "1.0.0",
+  "category": "ai",
+  "entry_point": "/data/data/com.termux/files/home/tools/ai/skill-install.sh",
+  "requires_root": false,
+  "parameters": {
+    "skill_ref": {
+      "type": "string",
+      "description": "Skill reference (owner/repo@skill or full URL)",
+      "required": true
+    },
+    "global": {
+      "type": "boolean",
+      "description": "Install globally (user-level)",
+      "required": false,
+      "default": true
+    },
+    "yes": {
+      "type": "boolean",
+      "description": "Skip confirmation prompts",
+      "required": false,
+      "default": true
+    }
+  },
+  "returns": {
+    "type": "object",
+    "description": "Installation result"
+  }
+}

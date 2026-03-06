@@ -1,0 +1,59 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "learning-logger",
+  "description": "Logs corrections, knowledge gaps, and best practices to .learnings/LEARNINGS.md",
+  "version": "1.0.0",
+  "category": "ai",
+  "entry_point": "/data/data/com.termux/files/home/.openclaw/skills/self-improving-agent/scripts/log-learning.sh",
+  "requires_root": false,
+  "parameters": {
+    "category": {
+      "type": "string",
+      "description": "Type of learning: correction, knowledge_gap, best_practice, pattern",
+      "required": true,
+      "enum": ["correction", "knowledge_gap", "best_practice", "pattern"]
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-line description of what was learned",
+      "required": true
+    },
+    "details": {
+      "type": "string",
+      "description": "Full context: what happened, what was wrong, what's correct",
+      "required": true
+    },
+    "priority": {
+      "type": "string",
+      "description": "Priority level",
+      "required": false,
+      "default": "medium",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "area": {
+      "type": "string",
+      "description": "Codebase area affected",
+      "required": false,
+      "enum": ["frontend", "backend", "infra", "tests", "docs", "config"]
+    },
+    "related_files": {
+      "type": "array",
+      "description": "Files related to this learning",
+      "required": false
+    },
+    "tags": {
+      "type": "array",
+      "description": "Tags for categorization",
+      "required": false
+    },
+    "pattern_key": {
+      "type": "string",
+      "description": "Stable key for recurring pattern tracking (e.g., 'simplify.dead_code')",
+      "required": false
+    }
+  },
+  "returns": {
+    "type": "object",
+    "description": "Entry ID and file path"
+  }
+}

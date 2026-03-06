@@ -1,0 +1,26 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "skill-search",
+  "description": "Search for skills in the agent skills ecosystem",
+  "version": "1.0.0",
+  "category": "ai",
+  "entry_point": "/data/data/com.termux/files/home/tools/ai/skill-search.sh",
+  "requires_root": false,
+  "parameters": {
+    "query": {
+      "type": "string",
+      "description": "Search query keywords",
+      "required": true
+    },
+    "interactive": {
+      "type": "boolean",
+      "description": "Interactive mode for browsing",
+      "required": false,
+      "default": false
+    }
+  },
+  "returns": {
+    "type": "array",
+    "description": "Matching skills with install commands"
+  }
+}

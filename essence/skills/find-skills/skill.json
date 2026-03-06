@@ -1,0 +1,20 @@
+{
+  "name": "find-skills",
+  "description": "Helps users discover and install agent skills from the open agent skills ecosystem",
+  "version": "0.1.0",
+  "author": "openclaw",
+  "category": "ai",
+  "tools": [
+    "skill-search",
+    "skill-install",
+    "skill-check"
+  ],
+  "config": {
+    "cli_command": "npx skills",
+    "registry_url": "https://skills.sh/",
+    "common_sources": [
+      "vercel-labs/agent-skills",
+      "ComposioHQ/awesome-claude-skills"
+    ]
+  }
+}

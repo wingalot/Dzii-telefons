@@ -1,0 +1,38 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "brave-search",
+  "description": "Search the web using Brave Search API",
+  "version": "1.0.0",
+  "category": "web",
+  "entry_point": "/data/data/com.termux/files/home/tools/web/brave-search.sh",
+  "requires_root": false,
+  "parameters": {
+    "query": {
+      "type": "string",
+      "description": "Search query",
+      "required": true
+    },
+    "count": {
+      "type": "number",
+      "description": "Number of results (1-20)",
+      "required": false,
+      "default": 10
+    },
+    "freshness": {
+      "type": "string",
+      "description": "Filter by recency",
+      "required": false,
+      "enum": ["pd", "pw", "pm", "py"]
+    },
+    "country": {
+      "type": "string",
+      "description": "2-letter country code",
+      "required": false,
+      "default": "US"
+    }
+  },
+  "returns": {
+    "type": "array",
+    "description": "Search results with title, url, snippet"
+  }
+}

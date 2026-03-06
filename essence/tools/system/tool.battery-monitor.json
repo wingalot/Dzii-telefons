@@ -1,0 +1,27 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "battery-monitor",
+  "description": "Monitors battery level and alerts when below 20%",
+  "version": "1.0.0",
+  "category": "system",
+  "entry_point": "/data/data/com.termux/files/home/tools/system/battery-monitor.sh",
+  "requires_root": false,
+  "parameters": {
+    "threshold": {
+      "type": "number",
+      "description": "Alert threshold percentage",
+      "required": false,
+      "default": 20
+    },
+    "critical_threshold": {
+      "type": "number",
+      "description": "Critical alert threshold",
+      "required": false,
+      "default": 5
+    }
+  },
+  "returns": {
+    "type": "object",
+    "description": "Battery status and alert state"
+  }
+}

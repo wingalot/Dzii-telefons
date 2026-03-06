@@ -1,0 +1,49 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "error-logger",
+  "description": "Logs command failures and exceptions to .learnings/ERRORS.md",
+  "version": "1.0.0",
+  "category": "ai",
+  "entry_point": "/data/data/com.termux/files/home/.openclaw/skills/self-improving-agent/scripts/log-error.sh",
+  "requires_root": false,
+  "parameters": {
+    "command": {
+      "type": "string",
+      "description": "Command or operation that failed",
+      "required": true
+    },
+    "error_output": {
+      "type": "string",
+      "description": "Actual error message or output",
+      "required": true
+    },
+    "context": {
+      "type": "string",
+      "description": "Additional context about what was attempted",
+      "required": false
+    },
+    "priority": {
+      "type": "string",
+      "description": "Priority level",
+      "required": false,
+      "default": "high",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "reproducible": {
+      "type": "string",
+      "description": "Whether the error is reproducible",
+      "required": false,
+      "default": "unknown",
+      "enum": ["yes", "no", "unknown"]
+    },
+    "suggested_fix": {
+      "type": "string",
+      "description": "Suggested solution if identifiable",
+      "required": false
+    }
+  },
+  "returns": {
+    "type": "object",
+    "description": "Error ID and file path"
+  }
+}

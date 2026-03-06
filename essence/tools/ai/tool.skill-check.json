@@ -1,0 +1,14 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "skill-check",
+  "description": "Check installed skills and available updates",
+  "version": "1.0.0",
+  "category": "ai",
+  "entry_point": "/data/data/com.termux/files/home/tools/ai/skill-check.sh",
+  "requires_root": false,
+  "parameters": {},
+  "returns": {
+    "type": "array",
+    "description": "List of installed skills"
+  }
+}

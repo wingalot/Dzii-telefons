@@ -1,0 +1,68 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-03-06",
+  "tools_dir": "/data/data/com.termux/files/home/tools",
+  "categories": {
+    "system": {
+      "description": "Android device control and system operations",
+      "path": "system",
+      "tools": [
+        "device-screenshot",
+        "device-input", 
+        "app-manager",
+        "battery-monitor"
+      ]
+    },
+    "ai": {
+      "description": "AI/ML integrations and self-improvement",
+      "path": "ai",
+      "tools": [
+        "learning-logger",
+        "error-logger",
+        "skill-extractor",
+        "learning-reviewer",
+        "skill-search",
+        "skill-install",
+        "skill-check"
+      ]
+    },
+    "web": {
+      "description": "Web APIs, scraping, and search",
+      "path": "web",
+      "tools": [
+        "brave-search",
+        "gh-cli"
+      ]
+    },
+    "media": {
+      "description": "Screenshots, audio, video operations",
+      "path": "media",
+      "tools": []
+    },
+    "comms": {
+      "description": "Messaging and notifications",
+      "path": "comms",
+      "tools": []
+    }
+  },
+  "installed_skills": [
+    {
+      "name": "self-improving-agent",
+      "version": "1.0.11",
+      "path": "/data/data/com.termux/files/home/.openclaw/skills/self-improving-agent",
+      "active": true
+    },
+    {
+      "name": "find-skills",
+      "version": "0.1.0",
+      "path": "/data/data/com.termux/files/home/.openclaw/skills/find-skills",
+      "active": true
+    },
+    {
+      "name": "github",
+      "version": "1.0.0",
+      "path": "/data/data/com.termux/files/home/.openclaw/skills/github",
+      "active": true
+    }
+  ]
+}

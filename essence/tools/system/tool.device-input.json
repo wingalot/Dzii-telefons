@@ -1,0 +1,57 @@
+{
+  "$schema": "/data/data/com.termux/files/home/tools/schemas/tool_definition.json",
+  "name": "device-input",
+  "description": "Simulates touch input, key events, and gestures",
+  "version": "1.0.0",
+  "category": "system",
+  "entry_point": "/data/data/com.termux/files/home/tools/system/device-input.sh",
+  "requires_root": true,
+  "parameters": {
+    "action": {
+      "type": "string",
+      "description": "Input action type",
+      "required": true,
+      "enum": ["tap", "swipe", "text", "key", "home", "back", "recent"]
+    },
+    "x": {
+      "type": "number",
+      "description": "X coordinate for tap/swipe",
+      "required": false
+    },
+    "y": {
+      "type": "number",
+      "description": "Y coordinate for tap/swipe",
+      "required": false
+    },
+    "x2": {
+      "type": "number",
+      "description": "End X for swipe",
+      "required": false
+    },
+    "y2": {
+      "type": "number",
+      "description": "End Y for swipe",
+      "required": false
+    },
+    "text": {
+      "type": "string",
+      "description": "Text to type",
+      "required": false
+    },
+    "keycode": {
+      "type": "number",
+      "description": "Android key event code",
+      "required": false
+    },
+    "duration": {
+      "type": "number",
+      "description": "Swipe duration in ms",
+      "required": false,
+      "default": 300
+    }
+  },
+  "returns": {
+    "type": "object",
+    "description": "Action confirmation"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "self-improving-agent",
+  "description": "Captures learnings, errors, and corrections to enable continuous improvement. Logs to markdown files for later processing into fixes and project memory.",
+  "version": "1.0.11",
+  "author": "pskoett (ported for OpenClaw)",
+  "category": "ai",
+  "tools": [
+    "learning-logger",
+    "error-logger",
+    "feature-logger",
+    "skill-extractor",
+    "learning-reviewer"
+  ],
+  "config": {
+    "learning_files": {
+      "learnings": ".learnings/LEARNINGS.md",
+      "errors": ".learnings/ERRORS.md",
+      "features": ".learnings/FEATURE_REQUESTS.md"
+    },
+    "id_format": "TYPE-YYYYMMDD-XXX",
+    "promotion_targets": ["CLAUDE.md", "AGENTS.md", "SOUL.md", "TOOLS.md", ".github/copilot-instructions.md"]
+  }
+}
