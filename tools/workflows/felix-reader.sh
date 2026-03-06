@@ -1,73 +1,73 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# Felix Signal Reader - OCR versija, teksta izvade
+# Felix Signal Reader - Lightweight OCR reader (alias for quick text extraction)
 
-set -e
+set -euo pipefail
 
+# ===== KONFIGURĀCIJA =====
+STATE_DIR="${HOME}/.felix"
+TESSDATA_PREFIX="${HOME}/tessdata"
 TELEGRAM_PACKAGE="org.telegram.messenger.web"
-TESSDATA_PREFIX="$HOME/tessdata"
+DOWNLOAD_DIR="${HOME}/downloads"
 TIMESTAMP=$(date +%s)
-SCREENSHOT_PATH="/sdcard/felix_${TIMESTAMP}.png"
-LOCAL_PATH="/data/data/com.termux/files/home/downloads/felix_${TIMESTAMP}.png"
-OCR_OUTPUT="$HOME/.felix_last_signal.txt"
 
-echo "🚀 Felix Signal Reader (OCR)"
-echo "============================"
+SCREENSHOT_PATH="/sdcard/felix_read_${TIMESTAMP}.png"
+LOCAL_PATH="${DOWNLOAD_DIR}/felix_read_${TIMESTAMP}.png"
+OCR_OUTPUT="${STATE_DIR}/.last_read.txt"
 
-# 1. Pārbaudām OCR
-echo "🔍 Pārbauda OCR..."
-if [[ ! -f "$TESSDATA_PREFIX/eng.traineddata" ]]; then
-    echo "📥 Lejuplādē OCR datus..."
+# ===== INIT =====
+mkdir -p "$DOWNLOAD_DIR" "$STATE_DIR" 2>/dev/null || true
+
+echo "🚀 Felix Signal Reader"
+echo "======================"
+
+# Pārbaudām OCR
+if [[ ! -f "${TESSDATA_PREFIX}/eng.traineddata" ]]; then
+    echo "📥 Downloading OCR data..."
     mkdir -p "$TESSDATA_PREFIX"
-    curl -sL -o "$TESSDATA_PREFIX/eng.traineddata" \
-        https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
+    curl -sL -o "${TESSDATA_PREFIX}/eng.traineddata" \
+        "https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata"
 fi
 
-# 2. Aizver Telegram
-echo "🔒 Aizver Telegram..."
+# Ātrs Telegram atvēršana
+echo "📱 Opening Telegram..."
 su -c "am force-stop $TELEGRAM_PACKAGE" 2>/dev/null || true
-sleep 1
-
-# 3. Atver Telegram
-echo "📱 Atver Telegram..."
-su -c "monkey -p $TELEGRAM_PACKAGE -c android.intent.category.LAUNCHER 1" > /dev/null 2>&1
-sleep 4
-
-# 4. Meklē kanālu
-echo "🔍 Meklē kanālu..."
-su -c "input tap 540 280"
-sleep 1
-su -c "input text 'felix Vip room'"
+sleep 0.5
+su -c "am start -n ${TELEGRAM_PACKAGE}/org.telegram.ui.LaunchActivity" > /dev/null 2>&1 || \
+    su -c "monkey -p $TELEGRAM_PACKAGE -c android.intent.category.LAUNCHER 1" > /dev/null 2>&1
 sleep 2
 
-# 5. Atver kanālu
-echo "👉 Atver kanālu..."
+# Meklējam kanālu
+echo "🔍 Finding channel..."
+su -c "input tap 540 280"
+sleep 0.5
+su -c "input text 'felix vip room'"
+sleep 1
 su -c "input tap 540 550"
-sleep 3
+sleep 2
 
-# 6. Skrollē līdz apakšai
-echo "⬇️ Skrollē uz jaunāko ziņu..."
-for i in $(seq 1 20); do
-    su -c "input swipe 540 2200 540 300 100"
-    sleep 0.1
+# Scroll
+echo "⬇️ Scrolling..."
+for i in {1..15}; do
+    su -c "input swipe 540 2200 540 300 100" 2>/dev/null || true
 done
 
-# 7. Screenshot
-echo "📸 Taisa screenshot..."
+# Screenshot
+echo "📸 Capturing..."
 su -c "screencap -p '$SCREENSHOT_PATH'"
-cp "$SCREENSHOT_PATH" "$LOCAL_PATH" 2>/dev/null
+cp "$SCREENSHOT_PATH" "$LOCAL_PATH" 2>/dev/null || true
 
-# 8. OCR - nolasa tekstu
-echo "📖 OCR nolasa..."
+# OCR
+echo "🔍 Reading text..."
 export TESSDATA_PREFIX
-tesseract "$LOCAL_PATH" - > "$OCR_OUTPUT" 2>/dev/null
+tesseract "$LOCAL_PATH" - --oem 1 --psm 6 -l eng > "$OCR_OUTPUT" 2>/dev/null || true
 
 echo ""
-echo "============================"
-echo "📋 NOLASAIS TEKSTS:"
-echo "============================"
+echo "======================"
+echo "📋 EXTRACTED TEXT:"
+echo "======================"
 cat "$OCR_OUTPUT"
 echo ""
-echo "============================"
+echo "======================"
 echo "✅ Screenshot: $LOCAL_PATH"
-echo "✅ OCR teksts: $OCR_OUTPUT"
-echo "============================"
+echo "✅ Text file:  $OCR_OUTPUT"
+echo "======================"
