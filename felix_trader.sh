@@ -215,11 +215,17 @@ EOF
     # Log parsing results for debugging
     log "Parsed pair: $pair, direction: $direction, entry: $entry, SL: $sl" >&2
     
-    # Validate minimum required fields
-    if [ -z "$pair" ] || [ -z "$direction" ] || [ -z "$entry" ] || [ -z "$sl" ]; then
-        error "Invalid signal: missing required fields (pair=$pair, dir=$direction, entry=$entry, sl=$sl)"
+    # Validate minimum required fields (SL is optional - can be updated later)
+    if [ -z "$pair" ] || [ -z "$direction" ] || [ -z "$entry" ]; then
+        error "Invalid signal: missing required fields (pair=$pair, dir=$direction, entry=$entry)"
         echo "{\"valid\": false, \"error\": \"missing_fields\", \"raw\": \"$(echo "$raw_text" | tr '\n' ' ' | cut -c1-100)\"}"
         return 1
+    fi
+    
+    # If SL is missing, use entry as placeholder (will be updated by TP Manager later)
+    if [ -z "$sl" ]; then
+        sl="$entry"
+        log "No SL provided - using entry as placeholder (will be updated by TP Manager)" >&2
     fi
     
     # Build JSON output
@@ -263,11 +269,20 @@ calculate_size() {
         stop_distance=$(echo "scale=5; $sl - $entry" | bc)
     fi
     
-    # Handle invalid stop
+    # Handle invalid stop (zero or negative) - use default sizing
     if (( $(echo "$stop_distance <= 0" | bc -l) )); then
-        error "Invalid stop loss distance: $stop_distance"
-        echo "{\"valid\": false, \"error\": \"invalid_stop\"}"
-        return 1
+        log "No valid SL - using default position size" >&2
+        cat <<EOF
+{
+    "valid": true,
+    "position_size": "0.5",
+    "risk_amount": "0",
+    "risk_pct": "0",
+    "stop_pips": "0",
+    "stop_distance": "0"
+}
+EOF
+        return 0
     fi
     
     # Determine pip size based on pair

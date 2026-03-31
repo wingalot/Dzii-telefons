@@ -72,6 +72,9 @@ cmd_start() {
         info "💡 Commands:"
         info "   felix status   - Check status"
         info "   felix stop     - Stop system"
+        
+        # Auto-start watchdog
+        cmd_watchdog_start
     else
         error "❌ Failed to start Signal Hub"
         return 1
@@ -80,6 +83,9 @@ cmd_start() {
 
 cmd_stop() {
     log "🛑 Apturējam sistēmu..."
+    
+    # Stop Watchdog first
+    cmd_watchdog_stop 2>/dev/null
     
     # Stop Signal Hub
     if [ -f "$HUB_PID_FILE" ]; then
@@ -129,6 +135,9 @@ cmd_status() {
         warn "🟡 TP Manager: NAV AKTĪVS"
     fi
     
+    # Check Watchdog
+    cmd_watchdog_status
+    
     echo ""
     python3 "$SUPERVISOR_DIR/felix_ai_supervisor.py" --status 2>/dev/null || echo "Statistika nav pieejama"
 }
@@ -136,6 +145,42 @@ cmd_status() {
 cmd_wake() {
     log "🔔 Manually waking AI processor..."
     python3 "$SUPERVISOR_DIR/felix_ai_processor.py" --process-queue
+}
+
+cmd_watchdog_start() {
+    log "👁️ Starting TP Manager Watchdog..."
+    
+    # Check if already running
+    if pgrep -f "tp_manager_watchdog.sh" > /dev/null; then
+        log "ℹ️  Watchdog already running"
+        return 0
+    fi
+    
+    nohup "$SUPERVISOR_DIR/tp_manager_watchdog.sh" >> "$SUPERVISOR_DIR/logs/watchdog.log" 2>&1 &
+    sleep 2
+    
+    if pgrep -f "tp_manager_watchdog.sh" > /dev/null; then
+        log "✅ Watchdog started!"
+        info "👁️ Monitoring TP Manager every 30 seconds"
+        info "🔄 Auto-restart if TP Manager crashes"
+    else
+        error "❌ Failed to start watchdog"
+        return 1
+    fi
+}
+
+cmd_watchdog_stop() {
+    log "🛑 Stopping Watchdog..."
+    pkill -f "tp_manager_watchdog.sh" 2>/dev/null
+    log "✅ Watchdog stopped"
+}
+
+cmd_watchdog_status() {
+    if pgrep -f "tp_manager_watchdog.sh" > /dev/null; then
+        log "🟢 Watchdog: RUNNING"
+    else
+        error "🔴 Watchdog: STOPPED"
+    fi
 }
 
 cmd_tp_start() {
@@ -147,14 +192,15 @@ cmd_tp_start() {
         return 0
     fi
     
-    nohup python3 "$SUPERVISOR_DIR/felix_tp_manager.py" >> "$SUPERVISOR_DIR/logs/tp_manager.log" 2>&1 &
+    nohup python3 "$SUPERVISOR_DIR/felix_tp_manager.py" --sync >> "$SUPERVISOR_DIR/logs/tp_manager.log" 2>&1 &
     sleep 2
     
     if pgrep -f "felix_tp_manager.py" > /dev/null; then
         log "✅ TP Manager started!"
         info "📊 Managing TP levels locally for IG positions"
-        info "🎯 TP2 hit → SL moves to TP1"
-        info "📉 Fallback: Close if price falls 50% below TP2"
+        info "🔄 Auto-synced existing positions from IG"
+        info "🎯 TP1 hit → No action"
+        info "🎯 TP2 hit → SL moves to BE (entry) + 50% close"
         info "🎯 TP3 hit → Close position"
     else
         error "❌ Failed to start TP Manager"
@@ -179,6 +225,25 @@ cmd_tp_status() {
     fi
 }
 
+cmd_tp_sync() {
+    log "🔄 Syncing positions from IG..."
+    
+    if pgrep -f "felix_tp_manager.py" > /dev/null; then
+        # TP Manager is running, create trigger file
+        python3 "$SUPERVISOR_DIR/felix_tp_manager.py" --sync --once 2>/dev/null || \
+        python3 -c "
+import sys
+sys.path.insert(0, '$SUPERVISOR_DIR')
+from felix_tp_manager import TPManager
+manager = TPManager()
+imported = manager.sync_ig_positions()
+print(f'✅ Imported {imported} positions')
+"
+    else
+        warn "⚠️  TP Manager not running. Start with: felix tp-start"
+    fi
+}
+
 cmd_logs() {
     log "📜 Atveram logus..."
     if [ -f "$SUPERVISOR_DIR/logs/wake_daemon.log" ]; then
@@ -199,10 +264,13 @@ cmd_test() {
     python3 "$SUPERVISOR_DIR/felix_ai_supervisor.py" --process "$TEST_SIGNAL"
 }
 
+cmd_watchdog_stop() {
+    log "🛑 Stopping Watchdog..."
+    pkill -f "tp_manager_watchdog.sh" 2>/dev/null
+    log "✅ Watchdog stopped"
+}
+
 cmd_help() {
-    show_banner
-    echo "Izmantojums: felix [komanda]"
-    echo ""
     echo "Galvenās komandas:"
     echo "  start      - Palaist wake-on-signal daemon (gaida signālus)"
     echo "  stop       - Apturēt sistēmu"
@@ -211,11 +279,16 @@ cmd_help() {
     echo "  wake       - Manuāli pamodināt AI procesoru"
     echo ""
     echo "TP Manager komandas:"
-    echo "  tp-start   - Palaist lokālo TP pārvaldnieku"
+    echo "  tp-start   - Palaist lokālo TP pārvaldnieku (ar auto-sync)"
     echo "  tp-stop    - Apturēt TP pārvaldnieku"
     echo "  tp-status  - Skatīt TP pārvaldnieka statusu"
+    echo "  tp-sync    - Sinhronizēt ar IG pozīcijām (manueli)"
     echo ""
-    echo "Citas komandas:"
+    echo "Watchdog komandas:"
+    echo "  watchdog-start  - Palaist TP Manager uzraugu (auto-restart)"
+    echo "  watchdog-stop   - Apturēt uzraugu"
+    echo "  watchdog-status - Skatīt uzrauga statusu"
+    echo ""
     echo "  logs       - Skatīt reāllaika logus"
     echo "  fix        - Labot pēdējo noraidīto signālu"
     echo "  test       - Testēt ar parauga signālu"
@@ -230,8 +303,10 @@ cmd_help() {
     echo ""
     echo "Piemēri:"
     echo "  felix start      - Sākt gaidīt signālus"
-    echo "  felix tp-start   - Palaist TP pārvaldnieku"
+    echo "  felix tp-start   - Palaist TP pārvaldnieku (sync ar IG)"
+    echo "  felix tp-sync    - Manueli sinhronizēt pozīcijas"
     echo "  felix status     - Pārbaudīt statusu"
+    echo ""
 }
 
 # Main
@@ -244,6 +319,10 @@ case "${1:-}" in
     tp-start) cmd_tp_start ;;
     tp-stop) cmd_tp_stop ;;
     tp-status) cmd_tp_status ;;
+    tp-sync) cmd_tp_sync ;;
+    watchdog-start) cmd_watchdog_start ;;
+    watchdog-stop) cmd_watchdog_stop ;;
+    watchdog-status) cmd_watchdog_status ;;
     logs) cmd_logs ;;
     fix) cmd_fix ;;
     test) cmd_test ;;

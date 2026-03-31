@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ Mission Control | Felix Trading</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ Mission Control</h1>
+            <div class="status-bar">
+                <span id="ws-status" class="badge disconnected">● Offline</span>
+                <span id="felix-status" class="badge">Felix: --</span>
+                <span id="battery" class="badge">Batt: --</span>
+                <span id="clock" class="badge">--:--:--</span>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="trading">Trading</button>
+            <button class="tab-btn" data-tab="orders">Orders</button>
+            <button class="tab-btn" data-tab="logs">Logs</button>
+            <button class="tab-btn" data-tab="system">System</button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="cards">
+                <div class="card">
+                    <h3>💰 Account</h3>
+                    <div id="account-info" class="account-grid">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+                
+                <div class="card wide">
+                    <h3>📊 Open Positions <span id="pos-count" class="count">0</span></h3>
+                    <div id="positions-list" class="positions">
+                        <div class="loading">Loading positions...</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>🔔 Recent Signals</h3>
+                    <div id="signals-list" class="list">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>💹 P&L Summary</h3>
+                    <div id="pnl-summary" class="pnl">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trading Tab -->
+        <div id="trading" class="tab-content">
+            <div class="cards">
+                <div class="card">
+                    <h3>🚀 Quick Trade</h3>
+                    <form id="trade-form" class="form">
+                        <div class="form-group">
+                            <label>Pair</label>
+                            <select id="trade-pair" required>
+                                <option value="CS.D.EURUSD.CFD.IP">EURUSD</option>
+                                <option value="CS.D.GBPUSD.CFD.IP">GBPUSD</option>
+                                <option value="CS.D.USDJPY.CFD.IP">USDJPY</option>
+                                <option value="CS.D.GBPJPY.CFD.IP">GBPJPY</option>
+                                <option value="CS.D.EURJPY.CFD.IP">EURJPY</option>
+                                <option value="CS.D.AUDUSD.CFD.IP">AUDUSD</option>
+                                <option value="CS.D.CFDGOLD.CFDGC.IP">XAUUSD</option>
+                                <option value="CS.D.BITCOIN.CFD.IP">BTCUSD</option>
+                                <option value="CS.D.US500.CFD.IP">SPX500</option>
+                                <option value="CS.D.NASDAQ.CFD.IP">NAS100</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Direction</label>
+                            <div class="btn-group">
+                                <button type="button" class="dir-btn buy" data-dir="BUY">BUY</button>
+                                <button type="button" class="dir-btn sell" data-dir="SELL">SELL</button>
+                            </div>
+                            <input type="hidden" id="trade-dir" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Size (lots)</label>
+                            <input type="number" id="trade-size" step="0.1" min="0.1" value="1.0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Order Type</label>
+                            <select id="trade-type">
+                                <option value="MARKET">Market</option>
+                                <option value="LIMIT">Limit</option>
+                            </select>
+                        </div>
+                        <div class="form-group limit-price" style="display:none;">
+                            <label>Limit Price</label>
+                            <input type="number" id="trade-price" step="0.00001">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Execute Trade</button>
+                    </form>
+                    <div id="trade-result"></div>
+                </div>
+
+                <div class="card">
+                    <h3>📉 Close Position</h3>
+                    <div id="close-positions" class="close-list">
+                        <div class="empty">No open positions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orders Tab -->
+        <div id="orders" class="tab-content">
+            <div class="cards">
+                <div class="card wide">
+                    <h3>⏳ Pending Orders (Working Orders)</h3>
+                    <div id="working-orders" class="orders-list">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logs" class="tab-content">
+            <div class="cards">
+                <div class="card wide">
+                    <div class="log-controls">
+                        <button class="log-btn active" data-log="felix">Felix Log</button>
+                        <button class="log-btn" data-log="trades">Trades</button>
+                        <button class="log-btn" data-log="signals">Signals</button>
+                        <button class="log-btn" data-log="errors">Errors</button>
+                    </div>
+                    <pre id="log-content" class="log-view">Loading...</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Tab -->
+        <div id="system" class="tab-content">
+            <div class="cards">
+                <div class="card">
+                    <h3>🤖 Felix Control</h3>
+                    <div class="control-buttons">
+                        <button id="felix-start" class="btn btn-success">Start</button>
+                        <button id="felix-stop" class="btn btn-danger">Stop</button>
+                        <button id="felix-restart" class="btn btn-warning">Restart</button>
+                        <button id="felix-status" class="btn btn-info">Status</button>
+                    </div>
+                    <pre id="felix-output"></pre>
+                </div>
+                
+                <div class="card">
+                    <h3>📱 Phone Info</h3>
+                    <div id="phone-info">
+                        <div class="info-row"><span>Platform:</span><span>Android + LineageOS</span></div>
+                        <div class="info-row"><span>Node:</span><span id="node-version">--</span></div>
+                        <div class="info-row"><span>Uptime:</span><span id="uptime">--</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
