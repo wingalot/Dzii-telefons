@@ -1,0 +1,31 @@
+#!/bin/bash
+# Manual position closing helper
+
+echo "=============================================="
+echo "POZĪCIJU AIZVĒRŠANA (Manuāli jāizpilda IG app)"
+echo "=============================================="
+echo ""
+
+# Current duplicates
+echo "DUBLIKĀTI, KAS JĀAIZVER:"
+echo ""
+echo "1. USDCAD SELL"
+echo "   Deal ID: DIAAAAWZJWQHEA4"
+echo "   Ieeja: 1.39154 (vecāka)"
+echo "   ✅ Atstāt: DIAAAAWZXZ6Q4AQ (1.39433)"
+echo ""
+echo "2. GOLD BUY"  
+echo "   Deal ID: DIAAAAW28RN2LAV"
+echo "   Ieeja: 4610.79 (vecāka)"
+echo "   ✅ Atstāt: DIAAAAW28SG75AL (4610.99)"
+echo ""
+echo "=============================================="
+echo ""
+echo "SOĻI IG TRADING APP:"
+echo "1. Atvērt IG Trading app"
+echo "2. Atrast pozīcijas sarakstu"
+echo "3. Atrast USDCAD SELL @ 1.39154"
+echo "4. Spiest 'Close'"
+echo "5. Atrast GOLD BUY @ 4610.79"
+echo "6. Spiest 'Close'"
+echo ""

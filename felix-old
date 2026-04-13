@@ -1,0 +1,165 @@
+#!/bin/bash
+# Felix Hybrid v2.5 - Master Control
+
+cd "$HOME"
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+log() { echo -e "${GREEN}[FELIX]${NC} $1"; }
+warn() { echo -e "${YELLOW}[FELIX]${NC} $1"; }
+error() { echo -e "${RED}[FELIX]${NC} $1"; }
+info() { echo -e "${CYAN}[FELIX]${NC} $1"; }
+
+SUPERVISOR_DIR="$HOME/.openclaw/ai_supervisor"
+PID_DIR="$SUPERVISOR_DIR/state"
+
+cmd_start() {
+    log "Starting Felix Hybrid v2.5..."
+    
+    mkdir -p "$PID_DIR"
+    mkdir -p "$SUPERVISOR_DIR/logs"
+    
+    # Start Signal Hub (v2 - SQLite, but working)
+    if [[ -f "$PID_DIR/signal_hub.pid" ]]; then
+        kill $(cat "$PID_DIR/signal_hub.pid") 2>/dev/null || true
+        rm -f "$PID_DIR/signal_hub.pid"
+        sleep 1
+    fi
+    
+    nohup python3 "$SUPERVISOR_DIR/felix_signal_hub.py" > "$SUPERVISOR_DIR/logs/signal_hub.log" 2>&1 &
+echo $! > "$PID_DIR/signal_hub.pid"
+    sleep 3
+    
+    if kill -0 $(cat "$PID_DIR/signal_hub.pid") 2>/dev/null; then
+        log "✅ Signal Hub (v2) running"
+    else
+        error "❌ Signal Hub failed"
+        return 1
+    fi
+    
+    # Start TP Manager (v3 - refactored)
+    pkill -f "felix_tp_manager.py" 2>/dev/null || true
+    sleep 1
+    
+    nohup python3 "$SUPERVISOR_DIR/felix_tp_manager.py" > "$SUPERVISOR_DIR/logs/tp_manager.log" 2>&1 &
+echo $! > "$PID_DIR/tp_manager.pid"
+    sleep 2
+    
+    if kill -0 $(cat "$PID_DIR/tp_manager.pid") 2>/dev/null; then
+        log "✅ TP Manager (v3) running"
+    else
+        warn "⚠️ TP Manager may need sync"
+    fi
+    
+    log "🎉 Hybrid system started!"
+    info "v2 Signal Hub + v3 TP Manager"
+}
+
+cmd_stop() {
+    log "Stopping system..."
+    
+    if [[ -f "$PID_DIR/supervisor.pid" ]]; then
+        kill $(cat "$PID_DIR/supervisor.pid") 2>/dev/null || true
+        rm -f "$PID_DIR/supervisor.pid"
+    fi
+    
+    if [[ -f "$PID_DIR/signal_hub.pid" ]]; then
+        kill $(cat "$PID_DIR/signal_hub.pid") 2>/dev/null || true
+        rm -f "$PID_DIR/signal_hub.pid"
+    fi
+    
+    if [[ -f "$PID_DIR/tp_manager.pid" ]]; then
+        kill $(cat "$PID_DIR/tp_manager.pid") 2>/dev/null || true
+        rm -f "$PID_DIR/tp_manager.pid"
+    fi
+    
+    pkill -f "felix_signal_hub.py" 2>/dev/null || true
+    pkill -f "felix_tp_manager.py" 2>/dev/null || true
+    pkill -f "felix_supervisor.py" 2>/dev/null || true
+    
+    log "✅ System stopped"
+}
+
+cmd_status() {
+    log "System Status"
+    echo "============="
+    
+    if [[ -f "$PID_DIR/signal_hub.pid" ]] && kill -0 $(cat "$PID_DIR/signal_hub.pid") 2>/dev/null; then
+        log "🟢 Signal Hub (v2): RUNNING"
+    else
+        error "🔴 Signal Hub (v2): STOPPED"
+    fi
+    
+    if [[ -f "$PID_DIR/tp_manager.pid" ]] && kill -0 $(cat "$PID_DIR/tp_manager.pid") 2>/dev/null; then
+        log "🟢 TP Manager (v3): RUNNING"
+    else
+        error "🔴 TP Manager (v3): STOPPED"
+    fi
+    
+    if [[ -f "$PID_DIR/supervisor.pid" ]] && kill -0 $(cat "$PID_DIR/supervisor.pid") 2>/dev/null; then
+        log "🟢 Supervisor (v3): RUNNING"
+    else
+        warn "🟡 Supervisor (v3): NOT RUNNING"
+    fi
+    
+    # Show validation report if available
+    if [[ -f "$PID_DIR/supervisor_state.json" ]]; then
+        echo ""
+        info "Last Validation:"
+        python3 -c "
+import json
+import sys
+try:
+    with open('$PID_DIR/supervisor_state.json') as f:
+        data = json.load(f)
+        report = data.get('report', {})
+        print(f\"  IG Positions: {report.get('ig_positions_count', 'N/A')}\")
+        print(f\"  Local Positions: {report.get('local_positions_count', 'N/A')}\")
+        issues = report.get('issues_by_severity', {})
+        if issues.get('ERROR', 0) > 0:
+            print(f\"  ⚠️  ERRORS: {issues.get('ERROR', 0)}\")
+        if issues.get('WARNING', 0) > 0:
+            print(f\"  ⚠️  WARNINGS: {issues.get('WARNING', 0)}\")
+except Exception as e:
+    print(f\"  Error reading report: {e}\")
+"
+    fi
+}
+
+cmd_logs() {
+    tail -f "$SUPERVISOR_DIR/logs/signal_hub.log" "$SUPERVISOR_DIR/logs/tp_manager.log" 2>/dev/null
+}
+
+case "${1:-}" in
+    start) cmd_start ;;
+    stop) cmd_stop ;;
+    restart) cmd_stop; sleep 2; cmd_start ;;
+    status) cmd_status ;;
+    logs) cmd_logs ;;
+    supervisor)
+        echo "🛡️ Felix System Supervisor"
+        echo "=========================="
+        python3 "$SUPERVISOR_DIR/felix_supervisor.py" --once
+        ;;
+    autofix)
+        echo "🔧 Felix System Auto-Fix"
+        echo "======================="
+        echo ""
+        echo "This will:"
+        echo "  1. Close duplicate positions"
+        echo "  2. Show positions needing SL/TP"
+        echo ""
+        read -p "Execute fixes? Type 'yes': " confirm
+        if [[ "$confirm" == "yes" ]]; then
+            python3 "$SUPERVISOR_DIR/felix_autofix.py" --live
+        else
+            echo "Running in dry-run mode..."
+            python3 "$SUPERVISOR_DIR/felix_autofix.py"
+        fi
+        ;;
+    *) echo "Usage: felix {start|stop|restart|status|logs|supervisor|autofix}" ;;
+esac

@@ -415,8 +415,12 @@ execute_trade_api() {
     local entry="$4"
     local sl="$5"  # Not sent to IG, used for local monitoring
     local tp="$6"  # Not sent to IG, used for local monitoring
+    local order_type="${7:-MARKET}"  # MARKET or LIMIT
+    local tp1="${8:-}"
+    local tp2="${9:-}"
+    local tp3="${10:-}"
     
-    echo "Executing $direction $pair via IG API" >&2
+    echo "Executing $direction $pair via IG API (Order type: $order_type)" >&2
     
     # Get EPIC for the pair
     local epic=$(bash "$HOME/.trading/ig_api.sh" epic "$pair" 2>&2)
@@ -481,7 +485,15 @@ execute_trade_api() {
     echo "Note: SL ($sl) and TP ($tp) are NOT sent to IG - used for local TP monitoring only" >&2
     
     # Place order via IG API WITHOUT SL/TP - use correct counter currency
-    local result=$(bash "$HOME/.trading/ig_api.sh" order "$epic" "$direction" "$min_size" "" "" "$currency_code" 2> /dev/null)
+    # Parameter order: epic, direction, size, stop_level, limit_level, order_type, entry_price
+    local result
+    if [[ "$order_type" == "LIMIT" && -n "$entry" ]]; then
+        echo "Placing LIMIT order at $entry" >&2
+        result=$(bash "$HOME/.trading/ig_api.sh" order "$epic" "$direction" "$min_size" "" "" "LIMIT" "$entry" 2> /dev/null)
+    else
+        echo "Placing MARKET order" >&2
+        result=$(bash "$HOME/.trading/ig_api.sh" order "$epic" "$direction" "$min_size" "" "" "MARKET" 2> /dev/null)
+    fi
     
     echo "API Response: $result" >&2
     
@@ -499,7 +511,12 @@ execute_trade_api() {
         local mini_epic="${epic%.CFD.IP}.MINI.IP"
         echo "⚠️ Standard EPIC failed for JPY pair. Trying MINI variant: $mini_epic" >&2
         
-        local mini_result=$(bash "$HOME/.trading/ig_api.sh" order "$mini_epic" "$direction" "$min_size" "" "" 2> /dev/null)
+        local mini_result
+        if [[ "$order_type" == "LIMIT" && -n "$entry" ]]; then
+            mini_result=$(bash "$HOME/.trading/ig_api.sh" order "$mini_epic" "$direction" "$min_size" "" "" "LIMIT" "$entry" 2> /dev/null)
+        else
+            mini_result=$(bash "$HOME/.trading/ig_api.sh" order "$mini_epic" "$direction" "$min_size" "" "" "MARKET" 2> /dev/null)
+        fi
         echo "MINI EPIC Response: $mini_result" >&2
         
         if echo "$mini_result" | jq -e '.verified == true' > /dev/null 2>&1; then
@@ -596,6 +613,20 @@ process_felix_signal() {
     local entry=$(echo "$parsed" | jq -r '.entry')
     local sl=$(echo "$parsed" | jq -r '.stop_loss')
     local tp=$(echo "$parsed" | jq -r '.take_profits[0]')
+    local tp1=$(echo "$parsed" | jq -r '.take_profits[0]')
+    local tp2=$(echo "$parsed" | jq -r '.take_profits[1]')
+    local tp3=$(echo "$parsed" | jq -r '.take_profits[2]')
+    local format=$(echo "$parsed" | jq -r '.format // ""')
+    
+    # Detect order type based on format or LIMIT keyword in raw text
+    local order_type="MARKET"
+    if [[ "$format" == *"limit"* ]] || echo "$raw_signal" | grep -qiE 'LIMIT|limit'; then
+        order_type="LIMIT"
+        log "Detected LIMIT order from format: $format"
+    fi
+    
+    log "Order type: $order_type"
+    log "TP levels: TP1=$tp1, TP2=$tp2, TP3=$tp3"
     
     # Step 2: Check positions [DISABLED FOR TESTING]
     log "Step 2: Position check [SKIPPED - Risk validator OFF]"
@@ -614,17 +645,31 @@ process_felix_signal() {
     
     # Step 4: Execute via IG API
     log "Step 4: Executing trade via IG API..."
-    local execution=$(execute_trade_api "$pair" "$direction" "$size" "$entry" "$sl" "$tp")
+    local execution=$(execute_trade_api "$pair" "$direction" "$size" "$entry" "$sl" "$tp" "$order_type" "$tp1" "$tp2" "$tp3")
     
     # Step 5: Log result
     if echo "$execution" | jq -e '.success' > /dev/null; then
         log_trade "$parsed" "$sizing" "$execution"
         log "✅ TRADE EXECUTED SUCCESSFULLY"
         log "Notification: Trade Executed: $direction $pair @ $entry, Size: $size lots"
+        
+        # Send Telegram notification
+        local deal_id=$(echo "$execution" | jq -r '.deal_id // "unknown"')
+        local order_type_display="MARKET"
+        [[ "$order_type" == "LIMIT" ]] && order_type_display="LIMIT"
+        
+        python3 "$HOME/.openclaw/ai_supervisor/send_notification.py" \
+            "🟢 Jauns orderis izpildīts:\n\nPāris: $pair\nVirziens: $direction\nTips: $order_type_display\nIeeja: $entry\nIzmērs: $size lots\nSL: $sl\nTP1: ${tp1:-N/A}\nTP2: ${tp2:-N/A}\nTP3: ${tp3:-N/A}\n\nDeal ID: $deal_id" \
+            > /dev/null 2>&1 &
     else
         log_rejection "$parsed" "execution_failed"
         error "❌ TRADE EXECUTION FAILED"
         log "Notification: Trade Failed: $direction $pair - Check logs"
+        
+        # Send failure notification
+        python3 "$HOME/.openclaw/ai_supervisor/send_notification.py" \
+            "🔴 Ordera izpilde neizdevās:\n\nPāris: $pair\nVirziens: $direction\n\nPārbaudi logus!" \
+            > /dev/null 2>&1 &
         return 1
     fi
     

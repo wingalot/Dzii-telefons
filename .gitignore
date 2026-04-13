@@ -1,0 +1,26 @@
+# Logs and runtime data
+logs/
+state/
+orders/
+positions/
+signals/
+node_modules/
+__pycache__/
+*.log
+*.pid
+*.session
+*.session-journal
+
+# Sensitive config overrides (keep templates only)
+config.json
+!felix_system/ai_supervisor/config.json
+
+# Trading data
+data/
+*.csv
+*.jsonl
+
+# Backup files
+*.backup.*
+*.bak
+*~

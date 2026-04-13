@@ -1,0 +1,24 @@
+{
+  "epics": {
+    "EURUSD": "CS.D.EURUSD.CFD.IP",
+    "GBPUSD": "CS.D.GBPUSD.CFD.IP",
+    "USDJPY": "CS.D.USDJPY.CFD.IP",
+    "AUDUSD": "CS.D.AUDUSD.CFD.IP",
+    "USDCAD": "CS.D.USDCAD.CFD.IP",
+    "USDCHF": "CS.D.USDCHF.CFD.IP",
+    "NZDUSD": "CS.D.NZDUSD.CFD.IP",
+    "EURGBP": "CS.D.EURGBP.CFD.IP",
+    "EURJPY": "CS.D.EURJPY.CFD.IP",
+    "GBPJPY": "CS.D.GBPJPY.CFD.IP",
+    "AUDJPY": "CS.D.AUDJPY.CFD.IP",
+    "CHFJPY": "CS.D.CHFJPY.CFD.IP",
+    "EURAUD": "CS.D.EURAUD.CFD.IP",
+    "EURCHF": "CS.D.EURCHF.CFD.IP",
+    "GBPAUD": "CS.D.GBPAUD.CFD.IP",
+    "GBPCHF": "CS.D.GBPCHF.CFD.IP",
+    "XAUUSD": "CS.D.GOLD.CFD.IP",
+    "GOLD": "CS.D.GOLD.CFD.IP"
+  },
+  "default_size": 1.0,
+  "default_currency": "USD"
+}

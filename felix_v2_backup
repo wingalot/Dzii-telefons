@@ -1,0 +1,330 @@
+#!/bin/bash
+# ============================================================
+# FELIX AI TRADING SYSTEM - MASTER CONTROL
+# One command to rule them all
+# ============================================================
+
+cd "$HOME"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+log() { echo -e "${GREEN}[FELIX-AI]${NC} $1"; }
+warn() { echo -e "${YELLOW}[FELIX-AI]${NC} $1"; }
+error() { echo -e "${RED}[FELIX-AI]${NC} $1"; }
+info() { echo -e "${CYAN}[FELIX-AI]${NC} $1"; }
+
+SUPERVISOR_DIR="$HOME/.openclaw/ai_supervisor"
+PID_FILE="$SUPERVISOR_DIR/supervisor.pid"
+HUB_PID_FILE="$SUPERVISOR_DIR/signal_hub.pid"
+
+show_banner() {
+    echo ""
+    echo -e "${CYAN}╔══════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}     🤖 FELIX AI TRADING SYSTEM v2.0                     ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}     AI-Powered Signal Execution                          ${CYAN}║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+cmd_start() {
+    show_banner
+    
+    # Check if hub is already running
+    if [ -f "$HUB_PID_FILE" ]; then
+        HUB_PID=$(cat "$HUB_PID_FILE")
+        if ps | grep -q "$HUB_PID"; then
+            log "ℹ️  Signal Hub already running (PID: $HUB_PID)"
+            log "🎯 System will auto-process signals"
+            return 0
+        fi
+    fi
+    
+    log "🚀 Starting Felix Signal Hub..."
+    
+    # Ensure directories exist
+    mkdir -p "$SUPERVISOR_DIR"/{logs,state,fixes}
+    
+    # Kill any existing python processes using the session
+    pkill -f "felix_wake_daemon.py" 2>/dev/null
+    pkill -f "felix_signal_hub.py" 2>/dev/null
+    sleep 2
+    
+    # Start the Signal Hub (replaces wake daemon)
+    nohup python3 "$SUPERVISOR_DIR/felix_signal_hub.py" >> "$SUPERVISOR_DIR/logs/signal_hub.log" 2>&1 &
+    
+    HUB_PID=$!
+    echo $HUB_PID > "$HUB_PID_FILE"
+    
+    sleep 3
+    
+    if ps | grep -q "$HUB_PID"; then
+        log "✅ SIGNAL HUB ACTIVE!"
+        info "📡 Listening to Felix channel"
+        info "🎯 Distributes signals to AI + TP Manager"
+        info "⚡ No SQLite conflicts - each component isolated"
+        echo ""
+        info "💡 Commands:"
+        info "   felix status   - Check status"
+        info "   felix stop     - Stop system"
+        
+        # Auto-start watchdog
+        cmd_watchdog_start
+    else
+        error "❌ Failed to start Signal Hub"
+        return 1
+    fi
+}
+
+cmd_stop() {
+    log "🛑 Apturējam sistēmu..."
+    
+    # Stop Watchdog first
+    cmd_watchdog_stop 2>/dev/null
+    
+    # Stop Signal Hub
+    if [ -f "$HUB_PID_FILE" ]; then
+        kill $(cat "$HUB_PID_FILE") 2>/dev/null
+        rm -f "$HUB_PID_FILE"
+        log "✅ Signal Hub apturēts"
+    fi
+    
+    # Stop legacy processes
+    if [ -f "$PID_FILE" ]; then
+        kill $(cat "$PID_FILE") 2>/dev/null
+        rm -f "$PID_FILE"
+    fi
+    
+    pkill -f "felix_signal_hub.py" 2>/dev/null
+    pkill -f "felix_wake_daemon.py" 2>/dev/null
+    pkill -f "felix_ai_processor.py" 2>/dev/null
+    pkill -f "felix_ai_listener.py" 2>/dev/null
+    pkill -f "felix_auto_trader.py" 2>/dev/null
+    
+    log "✅ Sistēma apturēta"
+}
+
+cmd_status() {
+    show_banner
+    
+    echo -e "${BLUE}📊 SISTĒMAS STATUSS${NC}"
+    echo "===================="
+    
+    # Check Signal Hub
+    if [ -f "$HUB_PID_FILE" ]; then
+        HUB_PID=$(cat "$HUB_PID_FILE")
+        if ps | grep -q "$HUB_PID"; then
+            log "🟢 Signal Hub: DARBĒJĀS (PID: $HUB_PID)"
+            info "📡 Gaida signālus no Felix kanāla..."
+        else
+            error "🔴 Signal Hub: IZSLĒGTS"
+        fi
+    else
+        error "🔴 Signal Hub: IZSLĒGTS"
+    fi
+    
+    # Check TP Manager
+    if pgrep -f "felix_tp_manager.py" >/dev/null; then
+        info "🟢 TP Manager: DARBĒJĀS"
+    else
+        warn "🟡 TP Manager: NAV AKTĪVS"
+    fi
+    
+    # Check Watchdog
+    cmd_watchdog_status
+    
+    echo ""
+    python3 "$SUPERVISOR_DIR/felix_ai_supervisor.py" --status 2>/dev/null || echo "Statistika nav pieejama"
+}
+
+cmd_wake() {
+    log "🔔 Manually waking AI processor..."
+    python3 "$SUPERVISOR_DIR/felix_ai_processor.py" --process-queue
+}
+
+cmd_watchdog_start() {
+    log "👁️ Starting TP Manager Watchdog..."
+    
+    # Check if already running
+    if pgrep -f "tp_manager_watchdog.sh" > /dev/null; then
+        log "ℹ️  Watchdog already running"
+        return 0
+    fi
+    
+    nohup "$SUPERVISOR_DIR/tp_manager_watchdog.sh" >> "$SUPERVISOR_DIR/logs/watchdog.log" 2>&1 &
+    sleep 2
+    
+    if pgrep -f "tp_manager_watchdog.sh" > /dev/null; then
+        log "✅ Watchdog started!"
+        info "👁️ Monitoring TP Manager every 30 seconds"
+        info "🔄 Auto-restart if TP Manager crashes"
+    else
+        error "❌ Failed to start watchdog"
+        return 1
+    fi
+}
+
+cmd_watchdog_stop() {
+    log "🛑 Stopping Watchdog..."
+    pkill -f "tp_manager_watchdog.sh" 2>/dev/null
+    log "✅ Watchdog stopped"
+}
+
+cmd_watchdog_status() {
+    if pgrep -f "tp_manager_watchdog.sh" > /dev/null; then
+        log "🟢 Watchdog: RUNNING"
+    else
+        error "🔴 Watchdog: STOPPED"
+    fi
+}
+
+cmd_tp_start() {
+    log "🎯 Starting Local TP Manager..."
+    
+    # Check if already running
+    if pgrep -f "felix_tp_manager.py" > /dev/null; then
+        log "ℹ️  TP Manager already running"
+        return 0
+    fi
+    
+    nohup python3 "$SUPERVISOR_DIR/felix_tp_manager.py" --sync >> "$SUPERVISOR_DIR/logs/tp_manager.log" 2>&1 &
+    sleep 2
+    
+    if pgrep -f "felix_tp_manager.py" > /dev/null; then
+        log "✅ TP Manager started!"
+        info "📊 Managing TP levels locally for IG positions"
+        info "🔄 Auto-synced existing positions from IG"
+        info "🎯 TP1 hit → No action"
+        info "🎯 TP2 hit → SL moves to BE (entry) + 50% close"
+        info "🎯 TP3 hit → Close position"
+    else
+        error "❌ Failed to start TP Manager"
+        return 1
+    fi
+}
+
+cmd_tp_stop() {
+    log "🛑 Stopping TP Manager..."
+    pkill -f "felix_tp_manager.py" 2>/dev/null
+    log "✅ TP Manager stopped"
+}
+
+cmd_tp_status() {
+    if pgrep -f "felix_tp_manager.py" > /dev/null; then
+        log "🟢 TP Manager: RUNNING"
+        if [ -f "$SUPERVISOR_DIR/state/tp_manager_state.json" ]; then
+            python3 -c "import json; d=json.load(open('$SUPERVISOR_DIR/state/tp_manager_state.json')); print(f\"  📊 Positions tracked: {len(d.get('positions', {}))}\"); print(f\"  🎯 TP1 hits: {d.get('tp1_hits', 0)}\")"
+        fi
+    else
+        error "🔴 TP Manager: STOPPED"
+    fi
+}
+
+cmd_tp_sync() {
+    log "🔄 Syncing positions from IG..."
+    
+    if pgrep -f "felix_tp_manager.py" > /dev/null; then
+        # TP Manager is running, create trigger file
+        python3 "$SUPERVISOR_DIR/felix_tp_manager.py" --sync --once 2>/dev/null || \
+        python3 -c "
+import sys
+sys.path.insert(0, '$SUPERVISOR_DIR')
+from felix_tp_manager import TPManager
+manager = TPManager()
+imported = manager.sync_ig_positions()
+print(f'✅ Imported {imported} positions')
+"
+    else
+        warn "⚠️  TP Manager not running. Start with: felix tp-start"
+    fi
+}
+
+cmd_logs() {
+    log "📜 Atveram logus..."
+    if [ -f "$SUPERVISOR_DIR/logs/wake_daemon.log" ]; then
+        tail -f "$SUPERVISOR_DIR/logs/wake_daemon.log"
+    else
+        tail -f "$SUPERVISOR_DIR/logs/supervisor.log"
+    fi
+}
+
+cmd_fix() {
+    log "🔧 Labojam pēdējo noraidīto signālu..."
+    python3 "$SUPERVISOR_DIR/felix_ai_supervisor.py" --fix-last
+}
+
+cmd_test() {
+    log "🧪 Testējam ar parauga signālu..."
+    TEST_SIGNAL="🔴** Sell Limit XAUUSD @ 4721 **(__4720.75__)** ** TP #1: 4718  TP #2: 4660  __  SL: 4731 (__4731.10)"
+    python3 "$SUPERVISOR_DIR/felix_ai_supervisor.py" --process "$TEST_SIGNAL"
+}
+
+cmd_watchdog_stop() {
+    log "🛑 Stopping Watchdog..."
+    pkill -f "tp_manager_watchdog.sh" 2>/dev/null
+    log "✅ Watchdog stopped"
+}
+
+cmd_help() {
+    echo "Galvenās komandas:"
+    echo "  start      - Palaist wake-on-signal daemon (gaida signālus)"
+    echo "  stop       - Apturēt sistēmu"
+    echo "  restart    - Pārstartēt sistēmu"
+    echo "  status     - Skatīt statusu un statistiku"
+    echo "  wake       - Manuāli pamodināt AI procesoru"
+    echo ""
+    echo "TP Manager komandas:"
+    echo "  tp-start   - Palaist lokālo TP pārvaldnieku (ar auto-sync)"
+    echo "  tp-stop    - Apturēt TP pārvaldnieku"
+    echo "  tp-status  - Skatīt TP pārvaldnieka statusu"
+    echo "  tp-sync    - Sinhronizēt ar IG pozīcijām (manueli)"
+    echo ""
+    echo "Watchdog komandas:"
+    echo "  watchdog-start  - Palaist TP Manager uzraugu (auto-restart)"
+    echo "  watchdog-stop   - Apturēt uzraugu"
+    echo "  watchdog-status - Skatīt uzrauga statusu"
+    echo ""
+    echo "  logs       - Skatīt reāllaika logus"
+    echo "  fix        - Labot pēdējo noraidīto signālu"
+    echo "  test       - Testēt ar parauga signālu"
+    echo ""
+    echo "Kā tas strādā:"
+    echo "  • Daemon gaida signālus no Felix kanāla"
+    echo "  • Kad atnāk signāls → pieceļ AI procesoru"
+    echo "  • AI atver orderi IG ar SL (no Felix signāla)"
+    echo "  • TP Manager seko līdzi cenai lokāli"
+    echo "  • TP2 sasniegts → SL pāriet uz TP1"
+    echo "  • TP3 sasniegts → pozīcija tiek aizvērta"
+    echo ""
+    echo "Piemēri:"
+    echo "  felix start      - Sākt gaidīt signālus"
+    echo "  felix tp-start   - Palaist TP pārvaldnieku (sync ar IG)"
+    echo "  felix tp-sync    - Manueli sinhronizēt pozīcijas"
+    echo "  felix status     - Pārbaudīt statusu"
+    echo ""
+}
+
+# Main
+case "${1:-}" in
+    start) cmd_start ;;
+    stop) cmd_stop ;;
+    restart) cmd_stop; sleep 2; cmd_start ;;
+    status) cmd_status ;;
+    wake) cmd_wake ;;
+    tp-start) cmd_tp_start ;;
+    tp-stop) cmd_tp_stop ;;
+    tp-status) cmd_tp_status ;;
+    tp-sync) cmd_tp_sync ;;
+    watchdog-start) cmd_watchdog_start ;;
+    watchdog-stop) cmd_watchdog_stop ;;
+    watchdog-status) cmd_watchdog_status ;;
+    logs) cmd_logs ;;
+    fix) cmd_fix ;;
+    test) cmd_test ;;
+    *) cmd_help ;;
+esac

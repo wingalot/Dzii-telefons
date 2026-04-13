@@ -1,0 +1,12 @@
+{
+    "risk_management": {
+        "max_risk_per_trade_pct": 1.0,
+        "max_risk_per_day_pct": 3.0,
+        "max_open_positions": 5,
+        "max_correlated_positions": 2,
+        "account_balance": 10000,
+        "min_position_size": 0.5,
+        "max_position_size": 10.0,
+        "currency": "USD"
+    }
+}

@@ -1,0 +1,26 @@
+{
+  "api": {
+    "key": "YOUR_API_KEY_HERE",
+    "username": "YOUR_USERNAME_HERE",
+    "password": "YOUR_PASSWORD_HERE",
+    "environment": "demo",
+    "base_url": "https://demo-api.ig.com/gateway/deal",
+    "streaming_url": "https://demo-apd.marketdatasystems.com"
+  },
+  "risk_management": {
+    "max_risk_per_trade_pct": 1.0,
+    "max_risk_per_day_pct": 3.0,
+    "max_open_positions": 5,
+    "max_correlated_positions": 2,
+    "account_balance": 10000,
+    "min_position_size": 0.5,
+    "max_position_size": 10.0,
+    "currency": "USD"
+  },
+  "trading": {
+    "default_stop_distance": 20,
+    "default_limit_distance": 40,
+    "confirmation_required": false,
+    "auto_execute": true
+  }
+}

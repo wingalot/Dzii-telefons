@@ -1,0 +1,218 @@
+{
+  "_comment": "FELIX Trading System Configuration - Modify values below",
+  "system": {
+    "name": "FELIX",
+    "version": "1.0.0",
+    "mode": "demo",
+    "timezone": "Europe/Riga",
+    "log_level": "INFO"
+  },
+  "ig_api": {
+    "_comment": "IG Markets API Configuration",
+    "base_url": "https://demo-api.ig.com/gateway/deal",
+    "api_key": "YOUR_API_KEY_HERE",
+    "username": "YOUR_USERNAME_HERE",
+    "password": "YOUR_PASSWORD_HERE",
+    "account_id": "YOUR_ACCOUNT_ID_HERE",
+    "timeout_seconds": 30,
+    "retry_attempts": 3
+  },
+  "pairs": {
+    "_comment": "Currency pairs with IG EPIC codes",
+    "EURUSD": {
+      "epic": "CS.D.EURUSD.CFD.IP",
+      "description": "Euro vs US Dollar",
+      "pip_value": 0.0001,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "GBPUSD": {
+      "epic": "CS.D.GBPUSD.CFD.IP",
+      "description": "British Pound vs US Dollar",
+      "pip_value": 0.0001,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "USDJPY": {
+      "epic": "CS.D.USDJPY.CFD.IP",
+      "description": "US Dollar vs Japanese Yen",
+      "pip_value": 0.01,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "AUDUSD": {
+      "epic": "CS.D.AUDUSD.CFD.IP",
+      "description": "Australian Dollar vs US Dollar",
+      "pip_value": 0.0001,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "USDCAD": {
+      "epic": "CS.D.USDCAD.CFD.IP",
+      "description": "US Dollar vs Canadian Dollar",
+      "pip_value": 0.0001,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "EURGBP": {
+      "epic": "CS.D.EURGBP.CFD.IP",
+      "description": "Euro vs British Pound",
+      "pip_value": 0.0001,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "GBPJPY": {
+      "epic": "CS.D.GBPJPY.CFD.IP",
+      "description": "British Pound vs Japanese Yen",
+      "pip_value": 0.01,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "XAUUSD": {
+      "epic": "CS.D.XAUUSD.CFD.IP",
+      "description": "Gold vs US Dollar",
+      "pip_value": 0.01,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "XAGUSD": {
+      "epic": "CS.D.XAGUSD.CFD.IP",
+      "description": "Silver vs US Dollar",
+      "pip_value": 0.001,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "US30": {
+      "epic": "IX.D.DOW.DAILY.IP",
+      "description": "US Wall Street 30",
+      "pip_value": 1.0,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "US500": {
+      "epic": "IX.D.SPTRD.DAILY.IP",
+      "description": "US 500",
+      "pip_value": 0.1,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "DE40": {
+      "epic": "IX.D.DAX.DAILY.IP",
+      "description": "Germany 40",
+      "pip_value": 1.0,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "UK100": {
+      "epic": "IX.D.FTSE.DAILY.IP",
+      "description": "UK 100",
+      "pip_value": 1.0,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "BTCUSD": {
+      "epic": "CS.D.BITCOIN.CFD.IP",
+      "description": "Bitcoin vs US Dollar",
+      "pip_value": 1.0,
+      "min_lot_size": 0.01,
+      "enabled": true
+    },
+    "ETHUSD": {
+      "epic": "CS.D.ETHUSD.CFD.IP",
+      "description": "Ethereum vs US Dollar",
+      "pip_value": 0.01,
+      "min_lot_size": 0.01,
+      "enabled": true
+    }
+  },
+  "pair_aliases": {
+    "_comment": "Alternative names for pairs (used in signal parsing)",
+    "EU": "EURUSD",
+    "GU": "GBPUSD",
+    "UJ": "USDJPY",
+    "AU": "AUDUSD",
+    "UC": "USDCAD",
+    "EG": "EURGBP",
+    "GJ": "GBPJPY",
+    "GOLD": "XAUUSD",
+    "SILVER": "XAGUSD",
+    "DOW": "US30",
+    "SPX": "US500",
+    "NAS": "US100",
+    "DAX": "DE40",
+    "FTSE": "UK100",
+    "BTC": "BTCUSD",
+    "ETH": "ETHUSD"
+  },
+  "risk_management": {
+    "_comment": "Risk Management Settings",
+    "max_daily_loss": 50.0,
+    "max_daily_loss_percent": 5.0,
+    "max_daily_trades": 10,
+    "max_concurrent_positions": 5,
+    "default_risk_percent": 2.0,
+    "max_risk_percent": 5.0,
+    "min_risk_reward_ratio": 1.5,
+    "max_sl_distance_percent": 3.0,
+    "use_equity_based_sizing": true,
+    "allow_multiple_same_pair": false,
+    "close_on_opposite_signal": false
+  },
+  "trading": {
+    "_comment": "Default Trading Parameters",
+    "default_lot_size": 0.01,
+    "default_tp_percent": 2.0,
+    "default_sl_percent": 1.0,
+    "use_trailing_stop": false,
+    "trailing_stop_distance": 1.0,
+    "trailing_stop_step": 0.5,
+    "use_guaranteed_stop": false,
+    "guaranteed_stop_premium": 0.0003,
+    "market_order_timeout_seconds": 10,
+    "max_spread_pips": 5.0,
+    "allowed_session": {
+      "london": true,
+      "new_york": true,
+      "tokyo": false,
+      "sydney": false
+    },
+    "trading_hours": {
+      "start": "00:00",
+      "end": "23:59",
+      "friday_end": "21:00",
+      "sunday_start": "22:00"
+    }
+  },
+  "notifications": {
+    "_comment": "Notification Settings",
+    "telegram_bot_token": "YOUR_BOT_TOKEN_HERE",
+    "telegram_chat_id": "YOUR_CHAT_ID_HERE",
+    "notify_on_trade_opened": true,
+    "notify_on_trade_closed": true,
+    "notify_on_error": true,
+    "notify_on_warning": true,
+    "notify_daily_summary": true,
+    "summary_time": "21:00",
+    "use_sound_alert": false
+  },
+  "logging": {
+    "_comment": "Logging Configuration",
+    "log_to_file": true,
+    "log_to_console": true,
+    "log_directory": "~/.trading/logs",
+    "max_log_files": 30,
+    "log_level": "INFO",
+    "log_trades": true,
+    "log_api_calls": false
+  },
+  "advanced": {
+    "_comment": "Advanced Settings - Modify with caution",
+    "slippage_tolerance": 0.001,
+    "partial_close_enabled": false,
+    "partial_close_levels": [50, 25],
+    "breakeven_trigger": 1.0,
+    "breakeven_offset": 0.2,
+    "auto_rollover": true,
+    "position_monitoring_interval_seconds": 30
+  }
+}

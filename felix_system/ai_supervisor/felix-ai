@@ -1,0 +1,215 @@
+#!/bin/bash
+# ============================================================
+# FELIX AI SUPERVISOR CONTROL SCRIPT
+# Start/stop/status for the AI-enhanced trading system
+# ============================================================
+
+SUPERVISOR_DIR="$HOME/.openclaw/ai_supervisor"
+PID_FILE="$SUPERVISOR_DIR/supervisor.pid"
+LOG_FILE="$SUPERVISOR_DIR/logs/supervisor.log"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+log() { echo -e "${GREEN}[$(date '+%H:%M:%S')]${NC} $1"; }
+warn() { echo -e "${YELLOW}[$(date '+%H:%M:%S')] WARNING:${NC} $1"; }
+error() { echo -e "${RED}[$(date '+%H:%M:%S')] ERROR:${NC} $1"; }
+info() { echo -e "${BLUE}[$(date '+%H:%M:%S')] INFO:${NC} $1"; }
+
+ensure_dirs() {
+    mkdir -p "$SUPERVISOR_DIR"/{logs,state,fixes}
+}
+
+check_python() {
+    if ! command -v python3 &> /dev/null; then
+        error "python3 not found!"
+        exit 1
+    fi
+}
+
+# ============================================================
+# COMMANDS
+# ============================================================
+
+cmd_start() {
+    ensure_dirs
+    check_python
+    
+    # Check if already running
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        if ps | grep -q "$PID"; then
+            warn "AI Supervisor already running (PID: $PID)"
+            return 1
+        fi
+    fi
+    
+    log "🚀 Starting Felix AI Supervisor..."
+    
+    # Start the AI-enhanced listener in background
+    nohup python3 "$SUPERVISOR_DIR/felix_ai_listener.py" --listen >> "$LOG_FILE" 2>&1 &
+    
+    NEW_PID=$!
+    echo $NEW_PID > "$PID_FILE"
+    
+    sleep 2
+    
+    if ps | grep -q "$NEW_PID"; then
+        log "✅ AI Supervisor started (PID: $NEW_PID)"
+        info "Logs: tail -f $LOG_FILE"
+    else
+        error "❌ Failed to start AI Supervisor"
+        rm -f "$PID_FILE"
+        return 1
+    fi
+}
+
+cmd_stop() {
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        log "Stopping AI Supervisor (PID: $PID)..."
+        
+        # Kill supervisor
+        kill "$PID" 2>/dev/null
+        
+        # Kill any related Python processes
+        pkill -f "felix_ai_listener.py" 2>/dev/null
+        pkill -f "felix_auto_trader.py" 2>/dev/null
+        
+        rm -f "$PID_FILE"
+        
+        sleep 1
+        log "✅ AI Supervisor stopped"
+    else
+        warn "No PID file found, killing all related processes..."
+        pkill -f "felix_ai_listener.py" 2>/dev/null
+        pkill -f "felix_auto_trader.py" 2>/dev/null
+        log "✅ Processes stopped"
+    fi
+}
+
+cmd_restart() {
+    cmd_stop
+    sleep 2
+    cmd_start
+}
+
+cmd_status() {
+    echo "=========================================="
+    echo "  FELIX AI SUPERVISOR STATUS"
+    echo "=========================================="
+    
+    # Check AI Supervisor
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        if ps | grep -q "$PID"; then
+            log "🟢 AI Supervisor: RUNNING (PID: $PID)"
+        else
+            error "🔴 AI Supervisor: STOPPED (stale PID file)"
+            rm -f "$PID_FILE"
+        fi
+    else
+        error "🔴 AI Supervisor: STOPPED"
+    fi
+    
+    # Check legacy listener
+    if pgrep -f "felix_auto_trader.py" > /dev/null; then
+        info "🟡 Legacy Listener: RUNNING"
+    else
+        info "⚪ Legacy Listener: STOPPED"
+    fi
+    
+    # Show supervisor stats
+    echo ""
+    python3 "$SUPERVISOR_DIR/felix_ai_supervisor.py" --status 2>/dev/null || echo "No stats available"
+    
+    # Show recent activity
+    echo ""
+    echo "Recent Signals:"
+    if [ -f "$SUPERVISOR_DIR/logs/signals.log" ]; then
+        tail -5 "$SUPERVISOR_DIR/logs/signals.log" | while read line; do
+            echo "  $line"
+        done
+    else
+        echo "  No signals yet"
+    fi
+}
+
+cmd_logs() {
+    if [ -f "$LOG_FILE" ]; then
+        tail -f "$LOG_FILE"
+    else
+        warn "No log file found"
+    fi
+}
+
+cmd_fix() {
+    log "🔧 Running AI fix on last rejected signal..."
+    python3 "$SUPERVISOR_DIR/felix_ai_supervisor.py" --fix-last
+}
+
+cmd_test() {
+    log "🧪 Testing AI Supervisor with sample signal..."
+    
+    TEST_SIGNAL="🔴** Sell Limit XAUUSD @ 4721 **(__4720.75__)** ** TP #1: 4718  TP #2: 4660  __  SL: 4731 (__4731.10)"
+    
+    echo "Test signal:"
+    echo "  $TEST_SIGNAL"
+    echo ""
+    
+    python3 "$SUPERVISOR_DIR/felix_ai_supervisor.py" --process "$TEST_SIGNAL"
+}
+
+cmd_help() {
+    echo "Felix AI Supervisor Control"
+    echo "============================"
+    echo ""
+    echo "Commands:"
+    echo "  start    - Start AI Supervisor"
+    echo "  stop     - Stop AI Supervisor"
+    echo "  restart  - Restart AI Supervisor"
+    echo "  status   - Show system status"
+    echo "  logs     - View logs (tail -f)"
+    echo "  fix      - Fix last rejected signal"
+    echo "  test     - Test with sample signal"
+    echo ""
+    echo "Usage:"
+    echo "  felix-ai start"
+    echo "  felix-ai status"
+    echo "  felix-ai logs"
+}
+
+# ============================================================
+# MAIN
+# ============================================================
+
+case "${1:-}" in
+    start)
+        cmd_start
+        ;;
+    stop)
+        cmd_stop
+        ;;
+    restart)
+        cmd_restart
+        ;;
+    status)
+        cmd_status
+        ;;
+    logs)
+        cmd_logs
+        ;;
+    fix)
+        cmd_fix
+        ;;
+    test)
+        cmd_test
+        ;;
+    *)
+        cmd_help
+        ;;
+esac
